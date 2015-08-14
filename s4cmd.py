@@ -760,7 +760,6 @@ class S3Handler(object):
   @log_calls
   def sync_files(self, source, target):
     '''Sync files to S3. Does implement deletions if syncing TO s3.
-       Currently identical to get/put -r -f --sync-check with exception of deletions.
     '''
     src_s3_url = S3URL.is_valid(source)
     dst_s3_url = S3URL.is_valid(target)
@@ -1005,8 +1004,8 @@ class ThreadUtil(S3Handler, ThreadPool.Worker):
       elif self.opt.sync_check and self.sync_check(source, key):
         message('%s => %s (synced)', source, target)
         return
-      elif not self.opt.force and key:
-        raise Failure('File already exists: %s' % target)
+      elif not self.opt.force and key and key.size == fsize:
+        raise Failure('File already exists, and file sizes match: %s' % target)
 
       # Small file optimization.
       if fsize < self.opt.max_singlepart_upload_size:
@@ -1061,6 +1060,7 @@ class ThreadUtil(S3Handler, ThreadPool.Worker):
   @log_calls
   def _kick_off_downloads(self, s3url, bucket, source, target):
     '''Kick off download tasks, or directly download the file if the file is small.'''
+    fsize = os.path.getsize(target)
     key = bucket.get_key(s3url.path)
 
     # optional checks
@@ -1070,8 +1070,8 @@ class ThreadUtil(S3Handler, ThreadPool.Worker):
     elif self.opt.sync_check and self.sync_check(target, key):
       message('%s => %s (synced)', source, target)
       return
-    elif not self.opt.force and os.path.exists(target):
-      raise Failure('File already exists: %s' % target)
+  elif not self.opt.force and os.path.exists(target) and key.size == fsize:
+      raise Failure('File already exists, and file sizes match: %s' % target)
 
     if key is None:
       raise Failure('The key "%s" does not exists.' % (s3url.path,))
@@ -1298,12 +1298,7 @@ class CommandHandler(object):
   @log_calls
   def sync_handler(self, args):
     '''Handler for sync command.
-       XXX Here we emulate sync command with get/put -r -f --sync-check. So
-           it doesn't provide delete operation.
     '''
-    self.opt.recursive = True
-    self.opt.sync_check = True
-    self.opt.force = True
 
     self.validate('cmd|s3,local|s3,local', args)
     source = args[1]
