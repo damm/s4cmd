@@ -1070,7 +1070,7 @@ class ThreadUtil(S3Handler, ThreadPool.Worker):
     elif self.opt.sync_check and self.sync_check(target, key):
       message('%s => %s (synced)', source, target)
       return
-  elif not self.opt.force and os.path.exists(target) and key.size == fsize:
+    elif not self.opt.force and os.path.exists(target) and key.size == fsize:
       raise Failure('File already exists, and file sizes match: %s' % target)
 
     if key is None:
