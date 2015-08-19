@@ -1006,7 +1006,7 @@ class ThreadUtil(S3Handler, ThreadPool.Worker):
         return
       elif not self.opt.force and key and key.size == fsize:
         return # Files already match so nothing to do
-      elif not self.opt.force and key and key.size != fsize
+      elif not self.opt.force and key and key.size != fsize:
         message('File %s already exists, but size on disk(%d), does not match S3 size(%d)', target, fsize, key.size)
 
       # Small file optimization.
