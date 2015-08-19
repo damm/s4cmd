@@ -1063,7 +1063,6 @@ class ThreadUtil(S3Handler, ThreadPool.Worker):
   def _kick_off_downloads(self, s3url, bucket, source, target):
     '''Kick off download tasks, or directly download the file if the file is small.'''
     key = bucket.get_key(s3url.path)
-    fsize = os.path.getsize(target)
 
     # optional checks
     if self.opt.dry_run:
@@ -1072,10 +1071,10 @@ class ThreadUtil(S3Handler, ThreadPool.Worker):
     elif self.opt.sync_check and self.sync_check(target, key):
       message('%s => %s (synced)', source, target)
       return
-    elif not self.opt.force and os.path.exists(target) and key.size == fsize:
+    elif not self.opt.force and os.path.exists(target) and os.path.getsize(target):
       return # There is nothing to do here, as the files already match
-    elif not self.opt.force and os.path.exists(target) and key.size != fsize:
-      message('File %s already exists, but size on disk(%d), does not match S3 size(%d)', target, fsize, key.size)
+    elif not self.opt.force and os.path.exists(target) and os.path.getsize(target):
+      message('File %s already exists, but size on disk(%d), does not match S3 size(%d)', target, os.path.getsize(target), key.size)
 
     if key is None:
       raise Failure('The key "%s" does not exists.' % (s3url.path,))
